@@ -257,6 +257,21 @@ print(
 
 
 # ---------------------------------------------------------
+# CREATE TEST DATASET
+# ---------------------------------------------------------
+
+# Combine test features and target variable
+test_data = X_test.copy()
+test_data["Response"] = y_test.values
+
+# Save test dataset
+test_data.to_csv("test.csv", index=False)
+
+print("test.csv created successfully!")
+print(f"Test dataset shape: {test_data.shape}")
+
+
+# ---------------------------------------------------------
 # 7. SCALE FEATURES
 # ---------------------------------------------------------
 # The scaler is fitted ONLY on training data to avoid data leakage.
