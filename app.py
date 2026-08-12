@@ -1,6 +1,9 @@
-# app.py
-
-import streamlit as stimport pandas as pdimport numpy as npimport joblibimport osfrom sklearn.metrics import (
+import streamlit as st
+import pandas as pd
+import numpy as np
+import joblib
+import os
+from sklearn.metrics import (
     accuracy_score,
     roc_auc_score,
     precision_score,
@@ -8,9 +11,12 @@ import streamlit as stimport pandas as pdimport numpy as npimport joblibimport o
     f1_score,
     matthews_corrcoef,
     confusion_matrix,
-)import matplotlib.pyplot as pltimport seaborn as sns
-# ---------------------------------------------------------# PAGE CONFIGURATION
+)
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+# ---------------------------------------------------------
+# PAGE CONFIGURATION
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Customer Personality Analysis Classifier",
@@ -31,15 +37,19 @@ st.info(
 )
 
 
-
-# ---------------------------------------------------------# MODEL PATHS & STATIC BENCHMARKS# ---------------------------------------------------------model_paths = {
+# ---------------------------------------------------------
+# MODEL PATHS & STATIC BENCHMARKS
+# ---------------------------------------------------------
+model_paths = {
     "Logistic Regression": "model/logistic_regression.pkl",
     "Decision Tree": "model/decision_tree.pkl",
     "K-Nearest Neighbor (KNN)": "model/knn.pkl",
     "Gaussian Naive Bayes": "model/naive_bayes.pkl",
-    "Random Forest (Ensemble)": "model/random_forest.pkl",
+    "Random Forest (Ensemble)": "model/random_forest.pkl"
 }
-# Pre-calculated assignment benchmarks used only if a specific model binary is missingFALLBACK_METRICS = {
+
+# Pre-calculated assignment benchmarks used only if a specific model binary is missing
+FALLBACK_METRICS = {
     "Logistic Regression": {"Accuracy": 0.877679, "AUC Score": 0.864910, "Precision": 0.862326, "Recall": 0.877679, "F1 Score": 0.863364, "MCC Score": 0.435943},
     "Decision Tree": {"Accuracy": 0.860714, "AUC Score": 0.710113, "Precision": 0.837675, "Recall": 0.860714, "F1 Score": 0.841585, "MCC Score": 0.337396},
     "K-Nearest Neighbor (KNN)": {"Accuracy": 0.856696, "AUC Score": 0.723195, "Precision": 0.834008, "Recall": 0.856696, "F1 Score": 0.839616, "MCC Score": 0.329150},
@@ -48,10 +58,13 @@ st.info(
 }
 
 
-
-# ---------------------------------------------------------# HELPER FUNCTIONS# ---------------------------------------------------------def load_model(model_name):
+# ---------------------------------------------------------
+# HELPER FUNCTIONS
+# ---------------------------------------------------------
+def load_model(model_name):
     """Load a saved model from the model folder."""
     return joblib.load(model_paths[model_name])
+
 
 def get_expected_features(model, scaler):
     """
@@ -64,7 +77,6 @@ def get_expected_features(model, scaler):
     if hasattr(model, "feature_names_in_"):
         return list(model.feature_names_in_)
 
-
     if scaler is not None and hasattr(scaler, "feature_names_in_"):
         return list(scaler.feature_names_in_)
 
@@ -73,6 +85,7 @@ def get_expected_features(model, scaler):
         return list(feature_columns)
     except (FileNotFoundError, Exception):
         return None
+
 
 def prepare_features(data, model):
     """
@@ -83,7 +96,6 @@ def prepare_features(data, model):
     try:
         scaler = joblib.load("model/scaler.pkl")
     except FileNotFoundError:
-
         scaler = None
 
     expected_features = get_expected_features(model, scaler)
@@ -103,7 +115,6 @@ def prepare_features(data, model):
         X = X[expected_features]
 
         if extra_features:
-
             st.warning(
                 "Extra columns were ignored: " + ", ".join(extra_features)
             )
@@ -121,8 +132,8 @@ def prepare_features(data, model):
 
     return X_processed
 
-def evaluate_model(model_name, data):
 
+def evaluate_model(model_name, data):
     """
     Evaluate one saved model against the uploaded CSV at runtime.
     """
@@ -142,7 +153,6 @@ def evaluate_model(model_name, data):
             auc = None
     elif hasattr(model, "decision_function"):
         try:
-
             y_score = model.decision_function(X_processed)
             auc = roc_auc_score(y_test, y_score)
         except ValueError:
@@ -159,9 +169,9 @@ def evaluate_model(model_name, data):
 
     return metrics, y_pred, y_prob
 
+
 def generate_observation(model_name, metrics_df):
     """
-
     Generate dynamic observations based on the final computed matrix row.
     """
     row = metrics_df.loc[model_name]
@@ -181,7 +191,6 @@ def generate_observation(model_name, metrics_df):
         observations.append("achieved competitive Accuracy")
 
     if pd.notna(auc):
-
         if auc == metrics_df["AUC Score"].max():
             observations.append("achieved the highest AUC, indicating the strongest class discrimination")
         elif auc >= metrics_df["AUC Score"].median():
@@ -201,7 +210,6 @@ def generate_observation(model_name, metrics_df):
 
     if precision > recall + 0.10:
         observations.append("its higher Precision than Recall suggests a more conservative prediction threshold")
-
     elif recall > precision + 0.10:
         observations.append("its higher Recall than Precision suggests an aggressive target capture framework")
 
@@ -213,15 +221,19 @@ def generate_observation(model_name, metrics_df):
         + (" " + ". ".join(observations[1:]) + "." if len(observations) > 1 else "")
     )
 
-# ---------------------------------------------------------# SIDEBAR# ---------------------------------------------------------
+
+# ---------------------------------------------------------
+# SIDEBAR
+# ---------------------------------------------------------
 st.sidebar.header("1. Upload Test Data")
+
 uploaded_file = st.sidebar.file_uploader(
     "Upload test_data.csv",
-
     type=["csv"],
 )
 
 st.sidebar.header("2. Select Model")
+
 selected_model = st.sidebar.selectbox(
     "Choose a Classification Model",
     list(model_paths.keys()),
@@ -234,9 +246,12 @@ st.sidebar.write(
     "training and a `Response` column containing 0 and 1."
 )
 
-# ---------------------------------------------------------
 
-# CORE APPLICATION LOGIC# ---------------------------------------------------------# Visual checklist showing exactly which models are loaded live or using backup valueswith st.expander("🛠️ System Model File Diagnostics", expanded=True):
+# ---------------------------------------------------------
+# CORE APPLICATION LOGIC
+# ---------------------------------------------------------
+# Visual checklist showing exactly which models are loaded live or using backup values
+with st.expander("🛠️ System Model File Diagnostics", expanded=True):
     available_models = {}
     for name, path in model_paths.items():
         if os.path.exists(path):
@@ -247,10 +262,11 @@ st.sidebar.write(
             available_models[name] = False
 
 st.markdown("---")
+
 if uploaded_file is None:
     st.markdown("<h2 style='text-align: center; color: #FFA500;'>👉 Please upload test_data.csv from the sidebar</h2>", unsafe_allow_html=True)
-    st.info("Performance metrics tables, observations, winner criteria, and metrics charts will generate automatically below once your file is uploaded.")else:
-
+    st.info("Performance metrics tables, observations, winner criteria, and metrics charts will generate automatically below once your file is uploaded.")
+else:
     try:
         df = pd.read_csv(uploaded_file)
         
@@ -270,7 +286,6 @@ if uploaded_file is None:
                         metrics, y_pred, _ = evaluate_model(model_name, df)
                         final_metrics[model_name] = metrics
                         predictions_store[model_name] = y_pred
-
                     except Exception as e:
                         st.error(f"Error computing live metrics for {model_name}: {str(e)}")
                         final_metrics[model_name] = FALLBACK_METRICS[model_name]
@@ -290,7 +305,6 @@ if uploaded_file is None:
             for model_name in metrics_df.index:
                 detail_text = generate_observation(model_name, metrics_df)
                 observations_list.append({"ML Model Name": model_name, "Observation about model performance": detail_text})
-
             
             st.table(pd.DataFrame(observations_list).set_index("ML Model Name"))
             
@@ -310,7 +324,6 @@ if uploaded_file is None:
             st.markdown("---")
             col1, col2 = st.columns(2)
             
-
             with col1:
                 st.subheader(f"📊 Live Feature Exploration Dashboard")
                 st.write(f"Active Selected Profile Model: **{selected_model}**")
@@ -330,7 +343,6 @@ if uploaded_file is None:
                     ax.set_title(f"Confusion Matrix: {selected_model}")
                     ax.set_ylabel("Actual Class")
                     ax.set_xlabel("Predicted Class")
-
                 else:
                     # Informative fallback chart if the specific selected model weights are missing
                     counts = y_true.value_counts()
@@ -343,5 +355,3 @@ if uploaded_file is None:
                 
     except Exception as ex:
         st.error(f"An unexpected data handling exception occurred: {str(ex)}")
-
-
