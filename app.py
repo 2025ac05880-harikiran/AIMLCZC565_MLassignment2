@@ -39,12 +39,53 @@ st.info(
 # ---------------------------------------------------------
 # MODEL PATHS
 # ---------------------------------------------------------
+# Possible filenames are supported so the app can work with the
+# naming convention already used in the GitHub model/ folder.
+model_candidates = {
+    "Logistic Regression": [
+        "model/logistic_regression.pkl",
+        "model/logistic_regression_model.pkl",
+        "model/logistic.pkl",
+    ],
+    "Decision Tree": [
+        "model/decision_tree.pkl",
+        "model/decision_tree_model.pkl",
+        "model/decisiontree.pkl",
+    ],
+    "K-Nearest Neighbor (KNN)": [
+        "model/knn.pkl",
+        "model/knn_model.pkl",
+        "model/k_nearest_neighbors.pkl",
+        "model/knearestneighbors.pkl",
+    ],
+    "Gaussian Naive Bayes": [
+        "model/naive_bayes.pkl",
+        "model/naive_bayes_model.pkl",
+        "model/gaussian_naive_bayes.pkl",
+        "model/nb.pkl",
+    ],
+    "Random Forest (Ensemble)": [
+        "model/random_forest.pkl",
+        "model/random_forest_model.pkl",
+        "model/random_forest_classifier.pkl",
+        "model/randomforest.pkl",
+        "model/random_forest_ensemble.pkl",
+        "model/rf.pkl",
+    ],
+}
+
+def resolve_model_path(model_name):
+    """Return the first existing model file for the requested model."""
+    for path in model_candidates[model_name]:
+        if Path(path).is_file():
+            return path
+    return None
+
+# This dictionary is retained for UI/error messages and contains only
+# the preferred filename; no performance data is hardcoded.
 model_paths = {
-    "Logistic Regression": "model/logistic_regression.pkl",
-    "Decision Tree": "model/decision_tree.pkl",
-    "K-Nearest Neighbor (KNN)": "model/knn.pkl",
-    "Gaussian Naive Bayes": "model/naive_bayes.pkl",
-    "Random Forest (Ensemble)": "model/random_forest.pkl",
+    name: candidates[0]
+    for name, candidates in model_candidates.items()
 }
 
 
@@ -52,8 +93,22 @@ model_paths = {
 # HELPER FUNCTIONS
 # ---------------------------------------------------------
 def load_model(model_name):
-    """Load a saved model from the model folder."""
-    return joblib.load(model_paths[model_name])
+    """Load the saved model, accepting common model filename variants."""
+    model_path = resolve_model_path(model_name)
+
+    if model_path is None:
+        raise FileNotFoundError(
+            f"No saved model file was found for {model_name}. "
+            f"Checked: {', '.join(model_candidates[model_name])}"
+        )
+
+    try:
+        return joblib.load(model_path)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not load {model_name} from `{model_path}`. "
+            f"Original error: {type(exc).__name__}: {exc}"
+        ) from exc
 
 
 def get_expected_features(model, scaler):
@@ -324,19 +379,33 @@ else:
                 model_predictions[model_name] = predictions
                 model_probabilities[model_name] = probabilities
 
-            except FileNotFoundError:
-                st.error(
-                    f"Model file for **{model_name}** was not found. "
-                    f"Expected: `{model_paths[model_name]}`"
+            except FileNotFoundError as model_error:
+                st.warning(
+                    f"⚠️ **{model_name}** could not be evaluated. "
+                    f"{model_error}"
                 )
             except Exception as model_error:
-                st.error(
-                    f"Could not evaluate **{model_name}**: {model_error}"
+                st.warning(
+                    f"⚠️ **{model_name}** could not be evaluated. "
+                    f"{model_error}"
                 )
 
             progress.progress(i / len(model_paths))
 
         progress.empty()
+
+        # Show which model files were actually found. This makes deployment
+        # problems visible instead of silently hiding a missing RF model.
+        with st.expander("🔧 Model File Status", expanded=False):
+            for model_name in model_paths:
+                resolved = resolve_model_path(model_name)
+                if resolved:
+                    st.success(f"{model_name}: `{resolved}`")
+                else:
+                    st.error(
+                        f"{model_name}: model file not found. "
+                        f"Upload one of: {', '.join(model_candidates[model_name])}"
+                    )
 
         if not model_results:
             st.error(
@@ -402,9 +471,20 @@ else:
         st.write(f"## 🤖 Evaluation: {selected_model}")
 
         if selected_model not in model_predictions:
-            st.error(
-                f"No prediction results are available for {selected_model}."
-            )
+            resolved = resolve_model_path(selected_model)
+            if resolved is None:
+                st.error(
+                    f"❌ No saved model is available for **{selected_model}**. "
+                    f"Upload the trained Random Forest `.pkl` file into the "
+                    f"`model/` folder in GitHub. Accepted filenames include: "
+                    f"`{', '.join(model_candidates[selected_model])}`."
+                )
+            else:
+                st.error(
+                    f"❌ The model file `{resolved}` exists, but it could not "
+                    f"be evaluated. Check the warning above for the exact "
+                    f"loading/preprocessing error."
+                )
             st.stop()
 
         y_pred = model_predictions[selected_model]
