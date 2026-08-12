@@ -18,7 +18,12 @@ The final dataset contains complete transaction histories and customer traits, w
 
 ## c. Github Repository Link
 
-https://github.com/your-username/customer-personality-analysis-classification
+https://github.com/2025ac05880-harikiran/AIMLCZC565_MLassignment2/tree/main
+
+## << Streamlit app Link >>
+
+<< TO BE UPDATED>>
+
 
 ## d. Models Used & Evaluation Metrics
 
