@@ -43,53 +43,6 @@ The data partition was passed through five distinct classifiers using k-fold cro
 | **Random Forest (Ensemble)** | Delivered performance very close to Logistic Regression, with Accuracy (~0.875), Precision (~0.862), Recall (~0.875), and the highest F1 Score (~0.848) among all models. It also achieved the highest AUC (~0.870), demonstrating the strongest overall ranking and class-discrimination capability. |
 | **Overall Winner** | **Logistic Regression** is selected as the overall model based on the highest Accuracy (~87.8%) and MCC (~0.436), while also maintaining a strong F1 Score (~0.863). Random Forest is a very close alternative and achieves the best AUC (~0.870) and F1 Score (~0.848), making it particularly attractive when ranking/discrimination capability is prioritized. For this project, Logistic Regression is preferred for its combination of predictive performance, interpretability, and computational efficiency. |
 
-### Code Used to Generate the Observations Table
-
-```python
-# Model observations based on the cross-validation results
-
-observations = {
-    "Logistic Regression": (
-        "Showed the highest Accuracy (~0.878), Recall (~0.878), and MCC (~0.436). "
-        "Its F1 Score (~0.863) was also strong, indicating a good balance between "
-        "Precision and Recall."
-    ),
-    "Decision Tree": (
-        "Achieved strong Accuracy (~0.861) and Recall (~0.861), with an F1 Score "
-        "of ~0.842. However, its AUC (~0.710) and MCC (~0.337) were substantially "
-        "lower than Logistic Regression and Random Forest."
-    ),
-    "KNN": (
-        "Delivered stable performance with Accuracy (~0.857), Precision (~0.834), "
-        "Recall (~0.857), and F1 Score (~0.840). Its AUC (~0.723) indicates "
-        "moderate class-discrimination capability."
-    ),
-    "Gaussian Naive Bayes": (
-        "Produced the weakest overall results, with Accuracy and Recall of ~0.682 "
-        "and F1 Score of ~0.714. Its relatively high Precision (~0.841) was offset "
-        "by low Recall."
-    ),
-    "Random Forest (Ensemble)": (
-        "Delivered Accuracy (~0.875), Precision (~0.862), Recall (~0.875), and "
-        "the highest F1 Score (~0.848). It also achieved the highest AUC (~0.870), "
-        "showing the strongest class-discrimination capability."
-    ),
-}
-
-# Print observations in a Markdown table format
-print("| ML Model Name | Observation about model performance |")
-print("| :--- | :--- |")
-
-for model, observation in observations.items():
-    print(f"| **{model}** | {observation} |")
-
-print(
-    "| **Overall Winner** | **Logistic Regression** is selected based on the "
-    "highest Accuracy (~87.8%) and MCC (~0.436), with a strong F1 Score (~0.863). "
-    "Random Forest remains a very close alternative and has the highest AUC (~0.870). |"
-)
-```
-
 ## Overall Project Winner
 
 The **Logistic Regression** model is selected as the overall winner for this marketing campaign classification task. It achieved the highest Accuracy (~87.8%) and MCC (~0.436), while maintaining a strong F1 Score (~0.863). These results indicate that Logistic Regression provides a strong balance of predictive performance, reliability, interpretability, and computational efficiency.
