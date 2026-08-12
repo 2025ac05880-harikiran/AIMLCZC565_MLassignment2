@@ -8,7 +8,7 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     matthews_corrcoef,
-    confusion_matrix
+    confusion_matrix,
 )
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -20,7 +20,7 @@ import seaborn as sns
 st.set_page_config(
     page_title="Customer Personality Analysis Classifier",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
 )
 
 st.title("📊 Customer Personality Analysis Classification")
@@ -44,10 +44,192 @@ model_paths = {
     "Decision Tree": "model/decision_tree.pkl",
     "K-Nearest Neighbor (KNN)": "model/knn.pkl",
     "Gaussian Naive Bayes": "model/naive_bayes.pkl",
-    "Random Forest (Ensemble)": "model/random_forest.pkl"
+    "Random Forest (Ensemble)": "model/random_forest.pkl",
 }
 
 
+# ---------------------------------------------------------
+# HELPER FUNCTIONS
+# ---------------------------------------------------------
+def load_model(model_name):
+    """Load a saved model from the model folder."""
+    return joblib.load(model_paths[model_name])
+
+
+def get_expected_features(model, scaler):
+    """
+    Determine the feature order used during training.
+
+    Priority:
+    1. model.feature_names_in_
+    2. scaler.feature_names_in_
+    3. model/feature_columns.pkl
+    """
+    if hasattr(model, "feature_names_in_"):
+        return list(model.feature_names_in_)
+
+    if scaler is not None and hasattr(scaler, "feature_names_in_"):
+        return list(scaler.feature_names_in_)
+
+    try:
+        feature_columns = joblib.load("model/feature_columns.pkl")
+        return list(feature_columns)
+    except (FileNotFoundError, Exception):
+        return None
+
+
+def prepare_features(data, model):
+    """
+    Prepare uploaded predictor data using the saved training scaler.
+    No dataset values or evaluation results are hardcoded.
+    """
+    X = data.drop(columns=["Response"]).copy()
+
+    try:
+        scaler = joblib.load("model/scaler.pkl")
+    except FileNotFoundError:
+        scaler = None
+
+    expected_features = get_expected_features(model, scaler)
+
+    if expected_features is not None:
+        missing_features = [
+            col for col in expected_features if col not in X.columns
+        ]
+
+        if missing_features:
+            raise ValueError(
+                "The uploaded CSV is missing these required model features: "
+                + ", ".join(missing_features)
+            )
+
+        extra_features = [col for col in X.columns if col not in expected_features]
+        X = X[expected_features]
+
+        if extra_features:
+            st.warning(
+                "Extra columns were ignored: " + ", ".join(extra_features)
+            )
+
+    # Fill missing numeric values using the uploaded test data.
+    numeric_columns = X.select_dtypes(include=["number"]).columns
+    X[numeric_columns] = X[numeric_columns].fillna(
+        X[numeric_columns].median()
+    )
+
+    if scaler is not None:
+        X_processed = scaler.transform(X)
+    else:
+        X_processed = X
+
+    return X_processed
+
+
+def evaluate_model(model_name, data):
+    """
+    Evaluate one saved model against the uploaded CSV.
+    All metrics are calculated from the uploaded file at runtime.
+    """
+    model = load_model(model_name)
+
+    X_processed = prepare_features(data, model)
+    y_test = pd.to_numeric(data["Response"])
+
+    y_pred = model.predict(X_processed)
+
+    y_prob = None
+    auc = None
+
+    if hasattr(model, "predict_proba"):
+        try:
+            y_prob = model.predict_proba(X_processed)[:, 1]
+            auc = roc_auc_score(y_test, y_prob)
+        except (ValueError, IndexError):
+            auc = None
+    elif hasattr(model, "decision_function"):
+        try:
+            y_score = model.decision_function(X_processed)
+            auc = roc_auc_score(y_test, y_score)
+        except ValueError:
+            auc = None
+
+    metrics = {
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "AUC Score": auc,
+        "Precision": precision_score(
+            y_test, y_pred, zero_division=0
+        ),
+        "Recall": recall_score(
+            y_test, y_pred, zero_division=0
+        ),
+        "F1 Score": f1_score(
+            y_test, y_pred, zero_division=0
+        ),
+        "MCC Score": matthews_corrcoef(
+            y_test, y_pred
+        ),
+    }
+
+    return metrics, y_pred, y_prob
+
+
+def generate_observation(model_name, metrics_df):
+    """
+    Generate an observation from the metrics calculated from the
+    uploaded CSV. No performance numbers are hardcoded.
+    """
+    row = metrics_df.loc[model_name]
+
+    accuracy = row["Accuracy"]
+    auc = row["AUC Score"]
+    precision = row["Precision"]
+    recall = row["Recall"]
+    f1 = row["F1 Score"]
+    mcc = row["MCC Score"]
+
+    observations = []
+
+    # Relative performance
+    if accuracy == metrics_df["Accuracy"].max():
+        observations.append("achieved the highest Accuracy among the evaluated models")
+    elif accuracy >= metrics_df["Accuracy"].median():
+        observations.append("achieved competitive Accuracy")
+
+    if pd.notna(auc):
+        if auc == metrics_df["AUC Score"].max():
+            observations.append("achieved the highest AUC, indicating the strongest class discrimination")
+        elif auc >= metrics_df["AUC Score"].median():
+            observations.append("showed competitive class discrimination")
+
+    if precision == metrics_df["Precision"].max():
+        observations.append("had the highest Precision, indicating relatively fewer false-positive predictions")
+
+    if recall == metrics_df["Recall"].max():
+        observations.append("had the highest Recall, indicating that it identified the largest share of positive cases")
+
+    if f1 == metrics_df["F1 Score"].max():
+        observations.append("achieved the highest F1 Score, giving the strongest balance between Precision and Recall")
+
+    if mcc == metrics_df["MCC Score"].max():
+        observations.append("achieved the highest MCC, indicating the strongest overall balanced correlation between predictions and actual classes")
+
+    # Model-specific interpretation based on its observed metrics
+    if precision > recall + 0.10:
+        observations.append(
+            "its higher Precision than Recall suggests a more conservative positive-class prediction strategy"
+        )
+    elif recall > precision + 0.10:
+        observations.append(
+            "its higher Recall than Precision suggests a more aggressive positive-class prediction strategy"
+        )
+
+    if not observations:
+        observations.append("showed a balanced performance across the evaluated metrics")
+
+    return (
+        f"{model_name} {observations[0]}."
+        + (" " + ". ".join(observations[1:]) + "." if len(observations) > 1 else "")
+    )
 
 
 # ---------------------------------------------------------
@@ -57,134 +239,35 @@ st.sidebar.header("1. Upload Test Data")
 
 uploaded_file = st.sidebar.file_uploader(
     "Upload test_data.csv",
-    type=["csv"]
+    type=["csv"],
 )
 
 st.sidebar.header("2. Select Model")
 
 selected_model = st.sidebar.selectbox(
     "Choose a Classification Model",
-    list(model_paths.keys())
+    list(model_paths.keys()),
 )
 
 st.sidebar.markdown("---")
 st.sidebar.write("### Expected CSV Format")
 st.sidebar.write(
-    "Your test CSV should contain the same predictor columns used during "
-    "model training and a `Response` column for evaluation."
+    "Upload a CSV containing the same predictor columns used during model "
+    "training and a `Response` column containing 0 and 1."
 )
 
 
 # ---------------------------------------------------------
-# MODEL PERFORMANCE SUMMARY
+# WAIT FOR USER TO UPLOAD CSV
 # ---------------------------------------------------------
-st.write("## 📈 Model Performance Summary")
+if uploaded_file is None:
+    st.info(
+        "👈 Please upload the `test_data.csv` file from the sidebar. "
+        "Model performance, observations, and predictions will be generated "
+        "only after the CSV is uploaded."
+    )
 
-# ---------------------------------------------------------
-# MODEL RESULTS AND OBSERVATIONS
-# ---------------------------------------------------------
-# Cross-validation results for the Customer Personality
-# Analysis Classification project.
-model_results = {
-    "Logistic Regression": {
-        "Accuracy": 0.877679,
-        "AUC Score": 0.864910,
-        "Precision": 0.862326,
-        "Recall": 0.877679,
-        "F1 Score": 0.863364,
-        "MCC Score": 0.435943
-    },
-    "Decision Tree": {
-        "Accuracy": 0.860714,
-        "AUC Score": 0.710113,
-        "Precision": 0.837675,
-        "Recall": 0.860714,
-        "F1 Score": 0.841585,
-        "MCC Score": 0.337396
-    },
-    "K-Nearest Neighbor (KNN)": {
-        "Accuracy": 0.856696,
-        "AUC Score": 0.723195,
-        "Precision": 0.834008,
-        "Recall": 0.856696,
-        "F1 Score": 0.839616,
-        "MCC Score": 0.329150
-    },
-    "Gaussian Naive Bayes": {
-        "Accuracy": 0.681696,
-        "AUC Score": 0.779384,
-        "Precision": 0.841264,
-        "Recall": 0.681696,
-        "F1 Score": 0.713623,
-        "MCC Score": 0.300602
-    },
-    "Random Forest (Ensemble)": {
-        "Accuracy": 0.875446,
-        "AUC Score": 0.870216,
-        "Precision": 0.861503,
-        "Recall": 0.875446,
-        "F1 Score": 0.848002,
-        "MCC Score": 0.383906
-    }
-}
-
-observations = {
-    "Logistic Regression":
-        "Achieved the highest Accuracy (~87.8%), Recall (~87.8%), "
-        "and F1 Score (~0.863). Its MCC (~0.436) was also the highest, "
-        "indicating the strongest overall balanced classification performance.",
-    "Decision Tree":
-        "Achieved Accuracy of ~86.1% and Recall of ~86.1%. "
-        "Its lower AUC (~0.710) indicates weaker discrimination across "
-        "different classification thresholds compared with the other models.",
-    "K-Nearest Neighbor (KNN)":
-        "Delivered stable performance with Accuracy of ~85.7% and "
-        "F1 Score of ~0.840. Its performance was reasonable but slightly "
-        "below Logistic Regression and Random Forest.",
-    "Gaussian Naive Bayes":
-        "Produced the lowest Accuracy (~68.2%) and F1 Score (~0.714). "
-        "The lower performance suggests that the independence assumption "
-        "of Naive Bayes is not well suited to the relationships among "
-        "customer demographic, spending and purchase-channel variables.",
-    "Random Forest (Ensemble)":
-        "Delivered strong performance with Accuracy of ~87.5%, "
-        "Precision of ~0.862 and the highest AUC (~0.870). "
-        "Its ensemble structure provides strong class discrimination "
-        "and competitive overall performance."
-}
-
-
-results_df = pd.DataFrame(model_results).T
-results_df.index.name = "ML Model Name"
-
-st.dataframe(
-    results_df.style.format("{:.4f}"),
-    use_container_width=True
-)
-
-
-
-observation_df = pd.DataFrame(
-    [
-        {"ML Model Name": model, "Observation about model performance": text}
-        for model, text in observations.items()
-    ]
-)
-
-st.dataframe(
-    observation_df,
-    use_container_width=True,
-    hide_index=True
-)
-
-
-
-
-# ---------------------------------------------------------
-# TEST DATA EVALUATION
-# ---------------------------------------------------------
-if uploaded_file is not None:
-
+else:
     try:
         data = pd.read_csv(uploaded_file)
 
@@ -196,29 +279,22 @@ if uploaded_file is not None:
         )
 
         # -------------------------------------------------
-        # Validate Target Column
+        # VALIDATE TARGET
         # -------------------------------------------------
         if "Response" not in data.columns:
-
             st.error(
                 "❌ The uploaded CSV must contain a `Response` column "
                 "for model evaluation."
             )
-
             st.stop()
 
-        # Separate target and predictors
-        X_test = data.drop(columns=["Response"])
-        y_test = data["Response"]
+        y_test = pd.to_numeric(data["Response"], errors="coerce")
 
-        # Make sure target is numeric
-        try:
-            y_test = pd.to_numeric(y_test)
-        except Exception:
-            st.error("The `Response` column must contain binary values 0 and 1.")
+        if y_test.isna().any():
+            st.error("The `Response` column must contain only binary values 0 and 1.")
             st.stop()
 
-        unique_targets = sorted(y_test.dropna().unique().tolist())
+        unique_targets = sorted(y_test.unique().tolist())
 
         if not set(unique_targets).issubset({0, 1}):
             st.error(
@@ -228,172 +304,138 @@ if uploaded_file is not None:
             st.stop()
 
         # -------------------------------------------------
-        # Load Model
+        # GENERATE PERFORMANCE ONLY AFTER UPLOAD
         # -------------------------------------------------
-        st.write(f"## 🤖 Evaluation: {selected_model}")
+        st.write("## 📈 Model Performance Summary")
 
-        try:
-            model = joblib.load(model_paths[selected_model])
+        model_results = {}
+        model_predictions = {}
+        model_probabilities = {}
 
-        except FileNotFoundError:
+        progress = st.progress(0)
+
+        for i, model_name in enumerate(model_paths.keys(), start=1):
+            try:
+                metrics, predictions, probabilities = evaluate_model(
+                    model_name, data
+                )
+
+                model_results[model_name] = metrics
+                model_predictions[model_name] = predictions
+                model_probabilities[model_name] = probabilities
+
+            except FileNotFoundError:
+                st.error(
+                    f"Model file for **{model_name}** was not found. "
+                    f"Expected: `{model_paths[model_name]}`"
+                )
+            except Exception as model_error:
+                st.error(
+                    f"Could not evaluate **{model_name}**: {model_error}"
+                )
+
+            progress.progress(i / len(model_paths))
+
+        progress.empty()
+
+        if not model_results:
             st.error(
-                f"Model file not found: `{model_paths[selected_model]}`. "
-                "Please make sure the required .pkl files are inside the `model/` folder."
+                "No models could be evaluated. Please check that the required "
+                ".pkl files are present in the `model/` folder."
             )
             st.stop()
 
-        # -------------------------------------------------
-        # Load Scaler
-        # -------------------------------------------------
-        scaler = None
+        # Convert runtime-generated results into a DataFrame.
+        results_df = pd.DataFrame(model_results).T
+        results_df.index.name = "ML Model Name"
 
-        try:
-            scaler = joblib.load("model/scaler.pkl")
-        except FileNotFoundError:
-            st.warning(
-                "⚠️ `model/scaler.pkl` was not found. "
-                "The application will attempt to use the uploaded features directly."
+        st.dataframe(
+            results_df.style.format(
+                {
+                    "Accuracy": "{:.4f}",
+                    "AUC Score": "{:.4f}",
+                    "Precision": "{:.4f}",
+                    "Recall": "{:.4f}",
+                    "F1 Score": "{:.4f}",
+                    "MCC Score": "{:.4f}",
+                },
+                na_rep="N/A",
+            ),
+            use_container_width=True,
+        )
+
+        # -------------------------------------------------
+        # DYNAMIC OBSERVATIONS
+        # -------------------------------------------------
+        st.write("## 📝 Observations")
+
+        observation_df = pd.DataFrame(
+            [
+                {
+                    "ML Model Name": model_name,
+                    "Observation about model performance": generate_observation(
+                        model_name, results_df
+                    ),
+                }
+                for model_name in model_results.keys()
+            ]
+        )
+
+        st.dataframe(
+            observation_df,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        # -------------------------------------------------
+        # OVERALL WINNER
+        # -------------------------------------------------
+        winner = results_df["F1 Score"].idxmax()
+
+        st.success(
+            f"🏆 **Overall Winner based on the highest F1 Score: {winner}**"
+        )
+
+        # -------------------------------------------------
+        # SELECTED MODEL EVALUATION
+        # -------------------------------------------------
+        st.write(f"## 🤖 Evaluation: {selected_model}")
+
+        if selected_model not in model_predictions:
+            st.error(
+                f"No prediction results are available for {selected_model}."
             )
+            st.stop()
+
+        y_pred = model_predictions[selected_model]
+        y_prob = model_probabilities[selected_model]
+
+        selected_metrics = results_df.loc[selected_model]
 
         # -------------------------------------------------
-        # Feature Alignment
+        # EVALUATION METRICS
         # -------------------------------------------------
-        if hasattr(model, "feature_names_in_"):
-            expected_features = list(model.feature_names_in_)
-
-            missing_features = [
-                col for col in expected_features
-                if col not in X_test.columns
-            ]
-
-            extra_features = [
-                col for col in X_test.columns
-                if col not in expected_features
-            ]
-
-            if missing_features:
-                st.error(
-                    "The uploaded test data is missing the following model features: "
-                    + ", ".join(missing_features)
-                )
-                st.stop()
-
-            X_test = X_test[expected_features]
-
-            if extra_features:
-                st.warning(
-                    "Extra columns were ignored: "
-                    + ", ".join(extra_features)
-                )
-
-        # -------------------------------------------------
-        # Handle Missing Values
-        # -------------------------------------------------
-        X_test = X_test.copy()
-
-        numeric_columns = X_test.select_dtypes(
-            include=["number"]
-        ).columns
-
-        X_test[numeric_columns] = X_test[numeric_columns].fillna(
-            X_test[numeric_columns].median()
-        )
-
-        # -------------------------------------------------
-        # Transform / Scale
-        # -------------------------------------------------
-        if scaler is not None:
-            try:
-                X_processed = scaler.transform(X_test)
-            except Exception as scaler_error:
-                st.warning(
-                    f"Scaler could not transform the uploaded data: {scaler_error}. "
-                    "Using the processed features directly."
-                )
-                X_processed = X_test
-        else:
-            X_processed = X_test
-
-        # -------------------------------------------------
-        # Predictions
-        # -------------------------------------------------
-        y_pred = model.predict(X_processed)
-
-        # Probability / AUC
-        y_prob = None
-
-        if hasattr(model, "predict_proba"):
-            try:
-                y_prob = model.predict_proba(X_processed)[:, 1]
-            except Exception:
-                y_prob = None
-
-        if y_prob is not None:
-            try:
-                auc = roc_auc_score(y_test, y_prob)
-            except ValueError:
-                auc = None
-        else:
-            try:
-                auc = roc_auc_score(y_test, y_pred)
-            except ValueError:
-                auc = None
-
-        # -------------------------------------------------
-        # Evaluation Metrics
-        # -------------------------------------------------
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(
-            y_test, y_pred, zero_division=0
-        )
-        recall = recall_score(
-            y_test, y_pred, zero_division=0
-        )
-        f1 = f1_score(
-            y_test, y_pred, zero_division=0
-        )
-        mcc = matthews_corrcoef(
-            y_test, y_pred
-        )
-
         st.write("### 📌 Evaluation Metrics")
 
         c1, c2, c3 = st.columns(3)
 
-        c1.metric(
-            "Accuracy",
-            f"{accuracy:.4f}"
-        )
-
+        c1.metric("Accuracy", f"{selected_metrics['Accuracy']:.4f}")
         c2.metric(
             "AUC Score",
-            f"{auc:.4f}" if auc is not None else "N/A"
+            f"{selected_metrics['AUC Score']:.4f}"
+            if pd.notna(selected_metrics["AUC Score"])
+            else "N/A",
         )
-
-        c3.metric(
-            "Precision",
-            f"{precision:.4f}"
-        )
+        c3.metric("Precision", f"{selected_metrics['Precision']:.4f}")
 
         c4, c5, c6 = st.columns(3)
 
-        c4.metric(
-            "Recall",
-            f"{recall:.4f}"
-        )
-
-        c5.metric(
-            "F1 Score",
-            f"{f1:.4f}"
-        )
-
-        c6.metric(
-            "MCC Score",
-            f"{mcc:.4f}"
-        )
+        c4.metric("Recall", f"{selected_metrics['Recall']:.4f}")
+        c5.metric("F1 Score", f"{selected_metrics['F1 Score']:.4f}")
+        c6.metric("MCC Score", f"{selected_metrics['MCC Score']:.4f}")
 
         # -------------------------------------------------
-        # Prediction Distribution
+        # PREDICTION DISTRIBUTION
         # -------------------------------------------------
         st.write("### 🎯 Prediction Summary")
 
@@ -402,25 +444,18 @@ if uploaded_file is not None:
 
         p1, p2 = st.columns(2)
 
-        p1.metric(
-            "Predicted Acceptances",
-            positive_predictions
-        )
-
-        p2.metric(
-            "Predicted Rejections",
-            negative_predictions
-        )
+        p1.metric("Predicted Acceptances", positive_predictions)
+        p2.metric("Predicted Rejections", negative_predictions)
 
         # -------------------------------------------------
-        # Confusion Matrix
+        # CONFUSION MATRIX
         # -------------------------------------------------
         st.write("### 🧩 Confusion Matrix")
 
         cm = confusion_matrix(
             y_test,
             y_pred,
-            labels=[0, 1]
+            labels=[0, 1],
         )
 
         fig, ax = plt.subplots(figsize=(5, 4))
@@ -431,14 +466,8 @@ if uploaded_file is not None:
             fmt="d",
             cmap="Blues",
             ax=ax,
-            xticklabels=[
-                "Rejected (0)",
-                "Accepted (1)"
-            ],
-            yticklabels=[
-                "Rejected (0)",
-                "Accepted (1)"
-            ]
+            xticklabels=["Rejected (0)", "Accepted (1)"],
+            yticklabels=["Rejected (0)", "Accepted (1)"],
         )
 
         ax.set_ylabel("Actual Response")
@@ -449,7 +478,7 @@ if uploaded_file is not None:
         plt.close(fig)
 
         # -------------------------------------------------
-        # Prediction Results
+        # PREDICTION RESULTS
         # -------------------------------------------------
         st.write("### 🔍 Prediction Results")
 
@@ -461,11 +490,11 @@ if uploaded_file is not None:
 
         st.dataframe(
             results_output.head(100),
-            use_container_width=True
+            use_container_width=True,
         )
 
         # -------------------------------------------------
-        # Download Predictions
+        # DOWNLOAD PREDICTIONS
         # -------------------------------------------------
         csv_data = results_output.to_csv(index=False)
 
@@ -473,28 +502,19 @@ if uploaded_file is not None:
             label="⬇️ Download Prediction Results",
             data=csv_data,
             file_name="customer_personality_predictions.csv",
-            mime="text/csv"
+            mime="text/csv",
         )
 
     except Exception as e:
-
         st.error(
             f"❌ An error occurred while processing the uploaded file: {e}"
         )
-
-else:
-
-    st.info(
-        "👈 Please upload the `test_data.csv` file from the sidebar "
-        "to evaluate the selected model."
-    )
 
 
 # ---------------------------------------------------------
 # FOOTER
 # ---------------------------------------------------------
 st.markdown("---")
-
 st.caption(
     "Kaggle Customer Personality Analysis Classification | "
     "Machine Learning Assignment 2"
