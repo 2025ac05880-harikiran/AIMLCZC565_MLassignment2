@@ -1,26 +1,3 @@
-"""
-train_models.py
-Kaggle Customer Personality Analysis - Classification
-
-Purpose:
-1. Load the Kaggle Customer Personality Analysis dataset.
-2. Preprocess the customer data.
-3. Create an 80/20 train-test split.
-4. Save the processed test set as BOTH:
-      - test.csv
-      - test_data.csv
-   (test_data.csv is retained for compatibility with the Streamlit app.)
-5. Train five required classification models.
-6. Save the trained models and scaler under model/.
-7. Print Accuracy, AUC, Precision, Recall, F1 and MCC for the README.
-
-Expected raw dataset file:
-    marketing_campaign.csv
-
-You can also name the raw dataset:
-    data.csv
-"""
-
 import os
 import warnings
 import joblib
@@ -55,6 +32,7 @@ possible_files = [
     "marketing_campaign.csv",
     "data.csv",
     "customer_personality_analysis.csv",
+    "/content/sample_data/Customer/Customer_personality_Analysis.xlsx",
 ]
 
 data_file = next((f for f in possible_files if os.path.exists(f)), None)
@@ -62,20 +40,25 @@ data_file = next((f for f in possible_files if os.path.exists(f)), None)
 if data_file is None:
     raise FileNotFoundError(
         "Dataset not found. Place the Kaggle Customer Personality Analysis "
-        "CSV in the same folder as this script and name it "
-        "'marketing_campaign.csv', 'data.csv', or "
-        "'customer_personality_analysis.csv'."
+        "CSV/XLSX in the same folder as this script or specify the correct path "
+        "and name it 'marketing_campaign.csv', 'data.csv', "
+        "'customer_personality_analysis.csv', or "
+        "'/content/sample_data/Customer/Customer_personality_Analysis.xlsx'."
     )
 
 print(f"Loading dataset: {data_file}")
 
-# Kaggle Customer Personality Analysis is commonly tab-separated.
-try:
-    df = pd.read_csv(data_file, sep="\t")
-    if len(df.columns) <= 2:
+# Check file extension to determine the reader
+if data_file.endswith('.xlsx'):
+    df = pd.read_excel(data_file)
+else: # Assume CSV for other files
+    # Kaggle Customer Personality Analysis is commonly tab-separated.
+    try:
+        df = pd.read_csv(data_file, sep="\t")
+        if len(df.columns) <= 2:
+            df = pd.read_csv(data_file)
+    except Exception:
         df = pd.read_csv(data_file)
-except Exception:
-    df = pd.read_csv(data_file)
 
 df.columns = df.columns.str.strip()
 
