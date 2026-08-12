@@ -48,49 +48,6 @@ model_paths = {
 }
 
 
-# Expected cross-validation results from the project
-model_results = {
-    "Logistic Regression": {
-        "Accuracy": 0.877679,
-        "AUC Score": 0.864910,
-        "Precision": 0.862326,
-        "Recall": 0.877679,
-        "F1 Score": 0.863364,
-        "MCC Score": 0.435943
-    },
-    "Decision Tree": {
-        "Accuracy": 0.860714,
-        "AUC Score": 0.710113,
-        "Precision": 0.837675,
-        "Recall": 0.860714,
-        "F1 Score": 0.841585,
-        "MCC Score": 0.337396
-    },
-    "K-Nearest Neighbor (KNN)": {
-        "Accuracy": 0.856696,
-        "AUC Score": 0.723195,
-        "Precision": 0.834008,
-        "Recall": 0.856696,
-        "F1 Score": 0.839616,
-        "MCC Score": 0.329150
-    },
-    "Gaussian Naive Bayes": {
-        "Accuracy": 0.681696,
-        "AUC Score": 0.779384,
-        "Precision": 0.841264,
-        "Recall": 0.681696,
-        "F1 Score": 0.713623,
-        "MCC Score": 0.300602
-    },
-    "Random Forest (Ensemble)": {
-        "Accuracy": 0.875446,
-        "AUC Score": 0.870216,
-        "Precision": 0.861503,
-        "Recall": 0.875446,
-        "F1 Score": 0.848002,
-        "MCC Score": 0.383906
-    }
-}
 
 
 # ---------------------------------------------------------
@@ -132,42 +89,6 @@ st.dataframe(
 )
 
 
-# ---------------------------------------------------------
-# OBSERVATIONS
-# ---------------------------------------------------------
-st.write("## e. Observations")
-
-observations = {
-    "Logistic Regression": (
-        "Showed the highest Accuracy (~0.878), Recall (~0.878), and MCC (~0.436). "
-        "Its F1 Score (~0.863) was also strong, indicating a good balance between "
-        "Precision and Recall. The model provides a strong and interpretable "
-        "baseline for identifying customers likely to respond to the campaign."
-    ),
-    "Decision Tree": (
-        "Achieved strong Accuracy (~0.861) and Recall (~0.861), with an F1 Score "
-        "of ~0.842. However, its AUC (~0.710) and MCC (~0.337) were substantially "
-        "lower than Logistic Regression and Random Forest, indicating weaker "
-        "overall class discrimination."
-    ),
-    "K-Nearest Neighbor (KNN)": (
-        "Delivered stable performance with Accuracy (~0.857), Precision (~0.834), "
-        "Recall (~0.857), and F1 Score (~0.840). Its AUC (~0.723) indicates "
-        "moderate ability to distinguish between responding and non-responding customers."
-    ),
-    "Gaussian Naive Bayes": (
-        "Produced the weakest overall results, with Accuracy and Recall of ~0.682 "
-        "and an F1 Score of ~0.714. Although Precision (~0.841) remained relatively "
-        "high, the low Recall indicates that the model missed a substantial number "
-        "of positive-response customers."
-    ),
-    "Random Forest (Ensemble)": (
-        "Delivered performance close to Logistic Regression, with Accuracy (~0.875), "
-        "Precision (~0.862), Recall (~0.875), and the highest F1 Score (~0.848). "
-        "It also achieved the highest AUC (~0.870), demonstrating the strongest "
-        "overall class-discrimination capability."
-    )
-}
 
 observation_df = pd.DataFrame(
     [
@@ -183,23 +104,6 @@ st.dataframe(
 )
 
 
-# ---------------------------------------------------------
-# OVERALL WINNER
-# ---------------------------------------------------------
-st.write("## 🏆 Overall Project Winner")
-
-st.success(
-    "**Logistic Regression** is selected as the overall winner based on the "
-    "highest Accuracy (~87.8%) and MCC (~0.436), while maintaining a strong "
-    "F1 Score (~0.863)."
-)
-
-st.write(
-    "Random Forest is a very close alternative and achieved the highest AUC "
-    "(~0.870) and F1 Score (~0.848). Logistic Regression is retained as the "
-    "final model because it combines predictive performance, interpretability, "
-    "and computational efficiency."
-)
 
 
 # ---------------------------------------------------------
