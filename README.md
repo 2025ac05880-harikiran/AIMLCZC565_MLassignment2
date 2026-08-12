@@ -48,8 +48,3 @@ The data partition was passed through five distinct classifiers using k-fold cro
 | **Random Forest (Ensemble)** | Delivered performance very close to Logistic Regression, with Accuracy (~0.875), Precision (~0.862), Recall (~0.875), and the highest F1 Score (~0.848) among all models. It also achieved the highest AUC (~0.870), demonstrating the strongest overall ranking and class-discrimination capability. |
 | **Overall Winner** | **Logistic Regression** is selected as the overall model based on the highest Accuracy (~87.8%) and MCC (~0.436), while also maintaining a strong F1 Score (~0.863). Random Forest is a very close alternative and achieves the best AUC (~0.870) and F1 Score (~0.848), making it particularly attractive when ranking/discrimination capability is prioritized. For this project, Logistic Regression is preferred for its combination of predictive performance, interpretability, and computational efficiency. |
 
-## Overall Project Winner
-
-The **Logistic Regression** model is selected as the overall winner for this marketing campaign classification task. It achieved the highest Accuracy (~87.8%) and MCC (~0.436), while maintaining a strong F1 Score (~0.863). These results indicate that Logistic Regression provides a strong balance of predictive performance, reliability, interpretability, and computational efficiency.
-
-The **Random Forest** model is a close second and deserves consideration for scenarios where ranking and class-discrimination capability are more important. It achieved the highest AUC (~0.870) and the highest F1 Score (~0.848). Therefore, both models are strong candidates, but **Logistic Regression is retained as the final model for this project based on the overall evaluation criteria**.
