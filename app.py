@@ -80,6 +80,80 @@ st.sidebar.write(
 # ---------------------------------------------------------
 st.write("## 📈 Model Performance Summary")
 
+# ---------------------------------------------------------
+# MODEL RESULTS AND OBSERVATIONS
+# ---------------------------------------------------------
+# Cross-validation results for the Customer Personality
+# Analysis Classification project.
+model_results = {
+    "Logistic Regression": {
+        "Accuracy": 0.877679,
+        "AUC Score": 0.864910,
+        "Precision": 0.862326,
+        "Recall": 0.877679,
+        "F1 Score": 0.863364,
+        "MCC Score": 0.435943
+    },
+    "Decision Tree": {
+        "Accuracy": 0.860714,
+        "AUC Score": 0.710113,
+        "Precision": 0.837675,
+        "Recall": 0.860714,
+        "F1 Score": 0.841585,
+        "MCC Score": 0.337396
+    },
+    "K-Nearest Neighbor (KNN)": {
+        "Accuracy": 0.856696,
+        "AUC Score": 0.723195,
+        "Precision": 0.834008,
+        "Recall": 0.856696,
+        "F1 Score": 0.839616,
+        "MCC Score": 0.329150
+    },
+    "Gaussian Naive Bayes": {
+        "Accuracy": 0.681696,
+        "AUC Score": 0.779384,
+        "Precision": 0.841264,
+        "Recall": 0.681696,
+        "F1 Score": 0.713623,
+        "MCC Score": 0.300602
+    },
+    "Random Forest (Ensemble)": {
+        "Accuracy": 0.875446,
+        "AUC Score": 0.870216,
+        "Precision": 0.861503,
+        "Recall": 0.875446,
+        "F1 Score": 0.848002,
+        "MCC Score": 0.383906
+    }
+}
+
+observations = {
+    "Logistic Regression":
+        "Achieved the highest Accuracy (~87.8%), Recall (~87.8%), "
+        "and F1 Score (~0.863). Its MCC (~0.436) was also the highest, "
+        "indicating the strongest overall balanced classification performance.",
+    "Decision Tree":
+        "Achieved Accuracy of ~86.1% and Recall of ~86.1%. "
+        "Its lower AUC (~0.710) indicates weaker discrimination across "
+        "different classification thresholds compared with the other models.",
+    "K-Nearest Neighbor (KNN)":
+        "Delivered stable performance with Accuracy of ~85.7% and "
+        "F1 Score of ~0.840. Its performance was reasonable but slightly "
+        "below Logistic Regression and Random Forest.",
+    "Gaussian Naive Bayes":
+        "Produced the lowest Accuracy (~68.2%) and F1 Score (~0.714). "
+        "The lower performance suggests that the independence assumption "
+        "of Naive Bayes is not well suited to the relationships among "
+        "customer demographic, spending and purchase-channel variables.",
+    "Random Forest (Ensemble)":
+        "Delivered strong performance with Accuracy of ~87.5%, "
+        "Precision of ~0.862 and the highest AUC (~0.870). "
+        "Its ensemble structure provides strong class discrimination "
+        "and competitive overall performance."
+}
+
+
 results_df = pd.DataFrame(model_results).T
 results_df.index.name = "ML Model Name"
 
