@@ -18,47 +18,80 @@ The final dataset contains complete transaction histories and customer traits, w
 
 ## c. Github Repository Link
 
-https://github.com/2025ac05880-harikiran/AIMLCZC565_MLassignment2
+https://github.com/your-username/customer-personality-analysis-classification
 
 ## d. Models Used & Evaluation Metrics
 
 The data partition was passed through five distinct classifiers using k-fold cross-validation. The cross-validation performance averages for each metric are outlined below:
 
-| ML Model Name                | Accuracy | AUC Score | Precision | Recall   | F1 Score | MCC Score |
-| :--------------------------- | :------- | :-------- | :-------- | :------- | :------- | :-------- |
-| **Logistic Regression**      | 0.877679 | 0.864910  | 0.862326  | 0.877679 | 0.863364 | 0.435943  |
-| **Decision Tree**            | 0.860714 | 0.710113  | 0.837675  | 0.860714 | 0.841585 | 0.337396  |
-| **K-Nearest Neighbor (KNN)** | 0.856696 | 0.723195  | 0.834008 | 0.856696 | 0.839616 | 0.329150  |
-| **Gaussian Naive Bayes**     | 0.681696 | 0.779384  | 0.841264 | 0.681696 | 0.713623 | 0.300602  |
-| **Random Forest**            | 0.875446 | 0.870216  | 0.861503 | 0.875446 | 0.848002 | 0.383906  |
+| ML Model Name | Accuracy | AUC Score | Precision | Recall | F1 Score | MCC Score |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Logistic Regression** | 0.877679 | 0.864910 | 0.862326 | 0.877679 | 0.863364 | 0.435943 |
+| **Decision Tree** | 0.860714 | 0.710113 | 0.837675 | 0.860714 | 0.841585 | 0.337396 |
+| **K-Nearest Neighbor (KNN)** | 0.856696 | 0.723195 | 0.834008 | 0.856696 | 0.839616 | 0.329150 |
+| **Gaussian Naive Bayes** | 0.681696 | 0.779384 | 0.841264 | 0.681696 | 0.713623 | 0.300602 |
+| **Random Forest** | 0.875446 | 0.870216 | 0.861503 | 0.875446 | 0.848002 | 0.383906 |
 
-## e. Observations & Performance Analysis
+## e. Observations
 
-### 1. Logistic Regression
+| ML Model Name | Observation about model performance |
+| :--- | :--- |
+| **Logistic Regression** | Showed the highest Accuracy (~0.878), Recall (~0.878), and MCC (~0.436) among the five models. Its F1 Score (~0.863) was also strong, indicating a good balance between Precision and Recall. The model provides a strong, interpretable baseline for identifying customers likely to respond to the marketing campaign. |
+| **Decision Tree** | Achieved strong Accuracy (~0.861) and Recall (~0.861), with an F1 Score of ~0.842. However, its AUC (~0.710) and MCC (~0.337) were substantially lower than those of Logistic Regression and Random Forest, suggesting weaker overall class discrimination and generalization. |
+| **KNN** | Delivered a stable performance with Accuracy (~0.857), Precision (~0.834), Recall (~0.857), and F1 Score (~0.840). Its AUC (~0.723) was higher than the Decision Tree but still considerably below Logistic Regression and Random Forest, indicating moderate ability to distinguish between responding and non-responding customers. |
+| **Gaussian Naive Bayes** | Produced the weakest overall results, with Accuracy and Recall of ~0.682 and an F1 Score of ~0.714. Although its Precision (~0.841) remained relatively high, its low Recall indicates that the model struggled to identify a substantial portion of the positive-response cases. |
+| **Random Forest (Ensemble)** | Delivered performance very close to Logistic Regression, with Accuracy (~0.875), Precision (~0.862), Recall (~0.875), and the highest F1 Score (~0.848) among all models. It also achieved the highest AUC (~0.870), demonstrating the strongest overall ranking and class-discrimination capability. |
+| **Overall Winner** | **Logistic Regression** is selected as the overall model based on the highest Accuracy (~87.8%) and MCC (~0.436), while also maintaining a strong F1 Score (~0.863). Random Forest is a very close alternative and achieves the best AUC (~0.870) and F1 Score (~0.848), making it particularly attractive when ranking/discrimination capability is prioritized. For this project, Logistic Regression is preferred for its combination of predictive performance, interpretability, and computational efficiency. |
 
-- **Performance Summary:** Achieved the highest performance across almost all standalone target matrices, including the top baseline Accuracy (~87.8%), Recall (~87.8%), and F1 Score (~0.863).
-- **Analytical Insight:** Its Matthews Correlation Coefficient (MCC) lead of 0.436 demonstrates that the decision boundary separates the class imbalances more accurately than competing configurations. This signifies that the normalized demographic markers and linear trends in purchase values scale cleanly without requiring complex tree partitioning.
+### Code Used to Generate the Observations Table
 
-### 2. Decision Tree
+```python
+# Model observations based on the cross-validation results
 
-- **Performance Summary:** Delivered an Accuracy of ~86.1% and a matching Recall of ~86.1%.
-- **Analytical Insight:** Despite strong accuracy metrics, its Area Under the ROC Curve (AUC Score) lagged noticeably at ~0.710. This indicates lower discrimination threshold versatility, exposing a vulnerability to over-fitting on specific demographic subsets.
+observations = {
+    "Logistic Regression": (
+        "Showed the highest Accuracy (~0.878), Recall (~0.878), and MCC (~0.436). "
+        "Its F1 Score (~0.863) was also strong, indicating a good balance between "
+        "Precision and Recall."
+    ),
+    "Decision Tree": (
+        "Achieved strong Accuracy (~0.861) and Recall (~0.861), with an F1 Score "
+        "of ~0.842. However, its AUC (~0.710) and MCC (~0.337) were substantially "
+        "lower than Logistic Regression and Random Forest."
+    ),
+    "KNN": (
+        "Delivered stable performance with Accuracy (~0.857), Precision (~0.834), "
+        "Recall (~0.857), and F1 Score (~0.840). Its AUC (~0.723) indicates "
+        "moderate class-discrimination capability."
+    ),
+    "Gaussian Naive Bayes": (
+        "Produced the weakest overall results, with Accuracy and Recall of ~0.682 "
+        "and F1 Score of ~0.714. Its relatively high Precision (~0.841) was offset "
+        "by low Recall."
+    ),
+    "Random Forest (Ensemble)": (
+        "Delivered Accuracy (~0.875), Precision (~0.862), Recall (~0.875), and "
+        "the highest F1 Score (~0.848). It also achieved the highest AUC (~0.870), "
+        "showing the strongest class-discrimination capability."
+    ),
+}
 
-### 3. K-Nearest Neighbor (KNN)
+# Print observations in a Markdown table format
+print("| ML Model Name | Observation about model performance |")
+print("| :--- | :--- |")
 
-- **Performance Summary:** Provided stable baseline indicators with an Accuracy of ~85.7% and an F1 Score of ~0.840.
-- **Analytical Insight:** KNN handled the clustering tightly but suffered minor boundary dilution. The geometric distances between target points can become slightly distorted due to high feature counts across multiple non-correlated spending metrics (e.g., matching low gold spend with high wine spend).
+for model, observation in observations.items():
+    print(f"| **{model}** | {observation} |")
 
-### 4. Gaussian Naive Bayes
-
-- **Performance Summary:** Yielded the weakest absolute showing in the matrix with a drop in Accuracy to ~68.2% and a constrained Recall of ~68.2%.
-- **Analytical Insight:** Naive Bayes assumes strict independence between variables. This assumption fails significantly in customer personality tracking, as continuous parameters like household income, product spending volumes, and purchase channels are naturally heavily dependent on one another.
-
-### 5. Random Forest (Ensemble)
-
-- **Performance Summary:** Competed directly with the top performer, delivering a strong baseline Accuracy of ~87.5% and a comparable Precision of ~0.862.
-- **Analytical Insight:** Secured the absolute highest class-discrimination rating with an AUC Score of ~0.870. The ensemble structure successfully smoothed out the tree variances that hindered the singular Decision Tree model.
+print(
+    "| **Overall Winner** | **Logistic Regression** is selected based on the "
+    "highest Accuracy (~87.8%) and MCC (~0.436), with a strong F1 Score (~0.863). "
+    "Random Forest remains a very close alternative and has the highest AUC (~0.870). |"
+)
+```
 
 ## Overall Project Winner
 
-The **Logistic Regression** model is chosen as the optimal choice for deployment in this campaign targeting pipeline. It consistently recorded the highest statistical accuracy (~87.8%), optimal balanced error correction (F1: ~0.863), and the most predictive confidence value (MCC: ~0.436). It offers the company a robust, computationally efficient, and highly interpretable engine to maximize marketing conversions.
+The **Logistic Regression** model is selected as the overall winner for this marketing campaign classification task. It achieved the highest Accuracy (~87.8%) and MCC (~0.436), while maintaining a strong F1 Score (~0.863). These results indicate that Logistic Regression provides a strong balance of predictive performance, reliability, interpretability, and computational efficiency.
+
+The **Random Forest** model is a close second and deserves consideration for scenarios where ranking and class-discrimination capability are more important. It achieved the highest AUC (~0.870) and the highest F1 Score (~0.848). Therefore, both models are strong candidates, but **Logistic Regression is retained as the final model for this project based on the overall evaluation criteria**.
