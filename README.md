@@ -8,7 +8,7 @@ The objective of this project is to implement multiple machine learning classifi
 
 ## b. Dataset Description
 
-The predictive models are trained and evaluated on the **Kaggle Customer Personality Analysis Dataset**. The source data captures an expansive footprint of customer behavior across three macro categories:
+The predictive models are trained and evaluated on the **Kaggle Customer Personality Analysis Dataset**. The source data captures an expansive footprint of customer behaviour across three macro categories:
 
 - **Demographics:** Age (derived from year of birth), education level, marital status, annual household income, and number of children or teenagers living at home.
 - **Spending Patterns:** Continuous numerical tracking of monetary amounts spent over a two-year window on six primary product segments: wines, fruits, meat products, fish products, sweet products, and gold products.
@@ -16,14 +16,9 @@ The predictive models are trained and evaluated on the **Kaggle Customer Persona
 
 The final dataset contains complete transaction histories and customer traits, where rows with critical missing features (such as blank income values) are systematically handled during pre-processing.
 
-## c. Github Repository Link
+## c. GitHub Repository Link
 
 https://github.com/2025ac05880-harikiran/AIMLCZC565_MLassignment2/tree/main
-
-## << Streamlit app Link >>
-
-<< TO BE UPDATED>>
-
 
 ## d. Models Used & Evaluation Metrics
 
